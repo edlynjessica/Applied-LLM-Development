@@ -1,72 +1,173 @@
-# 🎭Adding Tone & Persona to LLM Responses using `ChatPromptTemplate`
+# 📖 Chapter 1 Notes: Building AI Applications with LangChain
 
-In LangChain, `ChatPromptTemplate` is used to structure prompts for chat-based LLMs. It allows you to define different types of messages, such as **system**, **user**, and **assistant**.
+This chapter introduces the fundamental building blocks required to create AI applications using **LangChain**, **OpenRouter**, and **Pydantic**.
 
-## 📝 Example
+---
 
-```python
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-import os
+# 🏗️ Overall Workflow
 
-llm_openai = ChatOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    model="openai/gpt-oss-20b:free",
-    temperature=0.7,
-    api_key=os.getenv("OPENROUTER_API_KEY")
-)
+Every LangChain application generally follows this flow:
 
-prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are Peter Parker."),
-    ("user", "Tell me about {memory}")
-])
-
-user_input = input("Who is your favorite person? ")
-
-ready_prompt = prompt_template.invoke({"memory": user_input})
-
-response = llm_openai.invoke(ready_prompt)
-
-print(response.content)
+```text
+Load API Key
+      │
+      ▼
+Create LLM
+      │
+      ▼
+Collect User Input
+      │
+      ▼
+Create Prompt
+      │
+      ▼
+Generate Response
+      │
+      ▼
+(Optional) Convert to Structured Output
+      │
+      ▼
+Display Results
 ```
 
 ---
 
-# Understanding the Prompt Structure
+# 🌱 1. Environment Variables (`.env`)
 
-# 🛡️ 1. System Message
+## 🎯 Purpose
 
-The **system message** defines how the LLM should behave throughout the conversation.
+Store sensitive information like API keys securely instead of hardcoding them inside the program.
 
-```python
-("system", "You are Peter Parker.")
-```
+### You'll Learn
 
-This tells the model:
+- Loading a `.env` file
+- Reading environment variables
+- Checking whether an API key exists
 
-- Act like Peter Parker.
-- Respond from Peter Parker's perspective.
-- Use Peter Parker's personality, knowledge, and speaking style.
+### Libraries
 
-The system message has the **highest priority** among prompt messages.
+- `python-dotenv`
+- `os`
+
+> 💡 **Best Practice:** Never hardcode API keys inside your Python files.
 
 ---
 
-# 👤 2. User Message
+# 🤖 2. ChatOpenAI (OpenRouter)
 
-The **user message** represents the input provided by the user.
+## 🎯 Purpose
 
-```python
-("user", "Tell me about {memory}")
+Create an LLM that communicates with OpenRouter.
+
+### You'll Learn
+
+- Creating a `ChatOpenAI` object
+- Connecting to OpenRouter
+- Choosing a model
+- Setting the temperature
+
+### Important Parameters
+
+| Parameter | Purpose |
+|-----------|---------|
+| `base_url` | OpenRouter API endpoint |
+| `model` | Specifies which LLM to use |
+| `temperature` | Controls creativity (0 = deterministic, 1 = more creative) |
+| `api_key` | Authentication |
+
+---
+
+# 🙋 3. User Input
+
+## 🎯 Purpose
+
+Collect information dynamically from the user.
+
+Example inputs:
+
+- 🌍 Destination
+- 📅 Number of Days
+- 🎒 Travel Style
+- 💰 Budget Level
+
+Each input should be stored in a separate variable.
+
+---
+
+# 💬 4. ChatPromptTemplate
+
+## 🎯 Purpose
+
+Create **dynamic prompts** using placeholders.
+
+Instead of manually writing:
+
+```text
+Create a 3-day trip to Tokyo.
 ```
 
-When the user enters:
+Use placeholders like:
+
+- `{destination}`
+- `{days}`
+- `{travel_style}`
+- `{budget}`
+
+LangChain automatically replaces them with user input.
+
+---
+
+# 🎭 Understanding Prompt Messages
+
+`ChatPromptTemplate` structures prompts using different message types.
+
+| Message Type | Purpose |
+|--------------|---------|
+| 🛡️ **System** | Defines behavior, role, tone, and rules |
+| 🙋 **User** | Represents the user's request |
+| 🤖 **Assistant** | Provides example responses (optional) |
+
+---
+
+## 🛡️ System Message
+
+The **System Message** defines **how the AI should behave** throughout the conversation.
+
+Examples:
+
+- 👤 Persona
+- 🎨 Tone
+- 📚 Expertise
+- 📏 Constraints
+
+Example instructions:
+
+- You are Peter Parker.
+- Answer professionally.
+- Explain like a teacher.
+- Keep responses under 100 words.
+
+> ⭐ The System Message has the **highest priority** among all prompt messages.
+
+---
+
+## 🙋 User Message
+
+The **User Message** contains the user's request.
+
+Example:
+
+```
+Tell me about {memory}
+```
+
+If the user enters:
 
 ```
 Aunt May
 ```
 
-the actual prompt becomes:
+LangChain automatically creates:
 
 ```
 Tell me about Aunt May
@@ -74,174 +175,265 @@ Tell me about Aunt May
 
 ---
 
-# Is This Adding Tone?
+## 🤖 Assistant Message
 
-**Partially.**
+The **Assistant Message** represents a previous AI response.
 
-The system prompt primarily assigns a **role (persona)**.
+It is commonly used in **Few-Shot Prompting**, where example conversations guide the model toward the desired response style.
 
-That role naturally influences:
+Example:
 
-- Tone
-- Vocabulary
-- Style
-- Perspective
-- Personality
-
-So,
-
-```python
-("system", "You are Peter Parker.")
 ```
+System:
+You are a helpful assistant.
 
-does **more than just set the tone**.
+User:
+What is AI?
 
-It makes the model behave as Peter Parker.
+Assistant:
+AI stands for Artificial Intelligence.
+
+User:
+Can you explain it simply?
+```
 
 ---
 
 # 🎭 Persona vs 🎨 Tone
 
-## 👤 Persona = **Who the AI is**
+These terms are often confused but serve different purposes.
 
-Example:
+## 👤 Persona = Who the AI is
 
-```python
-("system", "You are Peter Parker.")
-```
+Examples:
 
-Possible response:
+- Peter Parker
+- Sherlock Holmes
+- Senior Python Developer
+- Travel Expert
 
-> Aunt May has always been my biggest inspiration. She taught me that with great power comes great responsibility.
-
----
-
-## 🎨 Tone = **How the AI speaks**
-
-Example:
-
-```python
-("system", "Answer in a friendly and humorous tone.")
-```
-
-Possible response:
-
-> That's a fantastic question! 😄 Let me tell you...
+Persona changes the **identity** of the AI.
 
 ---
 
-## Style
+## 🎨 Tone = How the AI speaks
 
-Defines the writing style.
+Examples:
 
-Example:
+- 😊 Friendly
+- 💼 Professional
+- 😂 Humorous
+- 📖 Formal
 
-```python
-("system", "Answer like Shakespeare.")
-```
-
-Possible response:
-
-> Verily, thou seekest knowledge most profound...
+Tone changes the **communication style**, not the identity.
 
 ---
 
-## 🧠 Expertise
+## 📚 Expertise
 
-Defines the AI's profession or domain knowledge.
+Defines the AI's domain knowledge.
 
 Example:
 
-```python
-("system", "You are a senior Python developer.")
-```
-
-Possible response:
-
-> The issue occurs because the variable hasn't been initialized before use.
+- Python Expert
+- Doctor
+- Travel Planner
+- Financial Advisor
 
 ---
 
 ## 📏 Constraints
 
-Define specific rules for responses.
+Control the format of the response.
+
+Examples:
+
+- Under 100 words
+- Bullet points only
+- Respond in Spanish
+- Explain simply
+
+---
+
+# 🎯 Combining Instructions
+
+A System Message can combine multiple instructions together.
 
 Example:
 
-```python
-("system", "Keep every answer under 50 words.")
+| Feature | Example |
+|---------|---------|
+| 👤 Persona | Travel Expert |
+| 🎨 Tone | Friendly |
+| 📚 Expertise | Budget Travel |
+| 📏 Constraint | Under 150 words |
+
+Combining instructions results in more consistent and controlled responses.
+
+---
+
+# 📨 Manual Messages
+
+Besides `ChatPromptTemplate`, LangChain also allows manual conversations using message objects.
+
+You'll work with:
+
+- 🛡️ `SystemMessage`
+- 🙋 `HumanMessage`
+- 🤖 `AIMessage`
+
+These simulate a real chat history.
+
+Example flow:
+
 ```
+System:
+You are a travel expert.
 
-or
+Human:
+I love adventure trips.
 
-```python
-("system", "Always respond in bullet points.")
+AI:
+Adventure trips are exciting!
+
+Human:
+Suggest one travel tip.
 ```
 
 ---
 
-# 🎉 Combining Everything
+# 🏗️ 5. Pydantic
 
-The best prompts usually combine multiple instructions.
+## 🎯 Purpose
 
-```python
-prompt = ChatPromptTemplate.from_messages([
-    (
-        "system",
-        """
-        You are Peter Parker.
-        Be friendly and witty.
-        Keep responses under 100 words.
-        Explain things simply.
-        """
-    ),
-    ("user", "Tell me about {memory}")
-])
-```
+Define the structure that the AI must follow.
 
-Now the AI has:
+Instead of generating plain text,
 
-| Feature | Value |
-|---------|-------|
-| 👤 Persona | Peter Parker |
-| 😊 Tone | Friendly & Witty |
-| 📏 Constraint | Under 100 words |
-| 📚 Style | Simple explanations |
+the model returns a structured Python object.
+
+Example fields:
+
+- Trip Title
+- Destination
+- Introduction
+- Places to Visit
+- Food Recommendation
+- Travel Tip
+- Estimated Budget
 
 ---
 
-# Why Use `ChatPromptTemplate`?
+# 🏷️ 6. Field()
 
-Instead of writing one long prompt string, `ChatPromptTemplate` separates different message types.
+Each attribute inside a Pydantic model should include a meaningful description.
 
-| Message Type | Purpose |
-|--------------|---------|
-| **System** | Defines behavior, role, tone, and rules |
-| **User** | Represents the user's input |
-| **Assistant** | Provides example responses (few-shot prompting) |
+Descriptions help the LLM understand:
+
+- What information belongs in each field
+- The expected content
+- The purpose of the attribute
+
+This often improves the quality of structured responses.
+
+---
+
+# 📦 7. Structured Output
+
+Normally an LLM returns plain text.
 
 Example:
 
-```python
-ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant."),
-    ("user", "What is AI?"),
-    ("assistant", "AI stands for Artificial Intelligence."),
-    ("user", "Can you explain it simply?")
-])
+```
+Welcome to Tokyo...
 ```
 
-Including **assistant** messages is useful for **few-shot prompting**, where you show the model examples of the desired response format.
+With **Structured Output**, the LLM follows a predefined schema and returns a structured object instead.
+
+Example:
+
+```
+TravelPlan
+├── Trip Title
+├── Destination
+├── Introduction
+├── Places to Visit
+├── Food Recommendation
+├── Travel Tip
+└── Estimated Budget
+```
+
+This makes the output:
+
+- ✅ Predictable
+- ✅ Easy to validate
+- ✅ Easy to use in Python
 
 ---
-# 📌 Key Takeaways
 
-- 🎭 **System Message** defines the AI's **role, personality, tone, and rules**.
-- 🙋 **User Message** contains the user's question.
-- 🤖 **Assistant Message** provides example responses (optional).
-- 👤 **Persona** = *Who the AI is.*
-- 🎨 **Tone** = *How the AI speaks.*
-- 📏 System prompts can also control **expertise, language, response length, formatting, and style**.
-- 🚀 A well-crafted system prompt leads to more consistent, natural, and engaging AI responses.
+# 🎯 8. Accessing Individual Fields
 
-> 💡 **Pro Tip:** Think of the **System Message** as the AI's **operating manual**. The better the instructions, the better the responses!
+Instead of printing the whole object, access each field separately.
+
+Examples:
+
+- Trip Title
+- Destination
+- Introduction
+- Food Recommendation
+- Travel Tip
+- Estimated Budget
+
+For lists (like places to visit), print each item individually.
+
+---
+
+# 🚀 Complete Application Flow
+
+```text
+Load API Key (.env)
+        │
+        ▼
+Create ChatOpenAI Model
+        │
+        ▼
+Collect User Input
+        │
+        ▼
+Create ChatPromptTemplate
+        │
+        ▼
+Generate Messages
+        │
+        ▼
+Convert LLM → Structured Output
+        │
+        ▼
+Generate Pydantic Object
+        │
+        ▼
+Access Individual Fields
+        │
+        ▼
+Display Final Result
+```
+
+---
+
+# 📝 Chapter Summary
+
+By the end of this chapter, you should understand:
+
+- 🌱 Environment Variables (`.env`)
+- 🤖 Creating an LLM using `ChatOpenAI`
+- 🙋 Collecting user input
+- 💬 Creating prompts with `ChatPromptTemplate`
+- 🛡️ Using **System**, **User**, and **Assistant** messages
+- 🎭 Persona vs Tone
+- 📨 Manual Messages (`SystemMessage`, `HumanMessage`, `AIMessage`)
+- 🏗️ Creating schemas using **Pydantic**
+- 🏷️ Using `Field()` descriptions
+- 📦 Generating **Structured Output**
+- 🎯 Accessing individual fields from a Pydantic object
+
+> 💡 **Key Takeaway:** Modern AI applications don't just generate text—they combine **prompt engineering**, **message-based conversations**, and **structured outputs** to build reliable, production-ready applications.
